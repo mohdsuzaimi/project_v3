@@ -1,6 +1,7 @@
+import 'dart:html' as html;
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const ProjectV3());
@@ -28,52 +29,34 @@ class BusinessCard extends StatelessWidget {
 
   static const Color gold = Color(0xFFD4AF37);
 
-  Future<void> saveContact(BuildContext context) async {
-    try {
-      final permission = await Permission.contacts.request();
+  // ==============================================================
+  // SAVE CONTACT - WEB VERSION
+  // ==============================================================
 
-      if (!permission.isGranted) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contacts permission is required.'),
-            ),
-          );
-        }
-        return;
-      }
+  void saveContact() {
+    const vCard = '''
+BEGIN:VCARD
+VERSION:3.0
+FN:JIMMY
+N:JIMMY;;;;
+TEL;TYPE=CELL:01173521488
+END:VCARD
+''';
 
-      final contact = Contact(
-        name: Name(
-          first: 'JIMMY',
-        ),
-        phones: [
-          Phone(
-            number: '011 7352 1488',
-            label: Label(PhoneLabel.mobile),
-          ),
-        ],
-      );
+    final bytes = utf8.encode(vCard);
 
-      await FlutterContacts.create(contact);
+    final blob = html.Blob(
+      [bytes],
+      'text/vcard',
+    );
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('JIMMY saved to contacts'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Unable to save contact: $e'),
-          ),
-        );
-      }
-    }
+    final url = html.Url.createObjectUrlFromBlob(blob);
+
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute('download', 'Jimmy.vcf')
+      ..click();
+
+    html.Url.revokeObjectUrl(url);
   }
 
   @override
@@ -107,7 +90,6 @@ class BusinessCard extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // SIMPLE J LOGO
                     const SimpleJLogo(),
 
                     const Text(
@@ -132,9 +114,7 @@ class BusinessCard extends StatelessWidget {
                     ),
 
                     GestureDetector(
-                      onTap: () {
-                        saveContact(context);
-                      },
+                      onTap: saveContact,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -169,7 +149,7 @@ class BusinessCard extends StatelessWidget {
 }
 
 // ================================================================
-// SIMPLE LUXURY J LOGO
+// SIMPLE J LOGO
 // ================================================================
 
 class SimpleJLogo extends StatelessWidget {
